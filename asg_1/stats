@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# variables and functions
+ROW_AVG=0
+COUNT=0
+
+function calculate {
+        # check each line
+        while read line
+        do
+                for num in $line
+                do
+                        ROW_AVG=`expr $ROW_AVG + $num`
+                        COUNT=`expr $COUNT + 1`
+                done
+                echo $line > tmp$$ # push the line into a file
+                tr ' ' '\n' < tmp$$ > tmp1$$ # add new line charaters
+                sort -n -k 1 tmp1$$ > tmp$$ # sorts list and moves back to tmp
+                DENOM=`expr $COUNT / 2`
+                if [ `expr $COUNT % 2` = 1 ]
+                then
+                        input=`expr $DENOM + 1` # stores row for median in even number
+                        MEDIAN="$(sed ${input}q tmp$$ | tail -1)" # pulls out the median
+                else
+                        input=`expr $DENOM + 1`
+                        x="$(sed ${input}q tmp$$ | tail -1)" # pulls out the median
+                        y="$(sed ${DENOM}q tmp$$ | tail -1)" # pulls out the median
+                        MEDIAN=`expr $(($x + $y + 1)) / 2` # rounds to nearest
+                fi
+                ROW_AVG=`expr $(($ROW_AVG + $DENOM))  / $COUNT` # calc avg
+                echo -e "$ROW_AVG" >> average$$
+                echo -e "$MEDIAN" >> median$$
+                ROW_AVG=0
+                COUNT=0
+        done < $1
+}
+
+function columns2rows {
+        length=$(awk '$0=NF' $1 |tail -n 1) #find the length of a rowe
+        for((col= 1; col <= $length; col++ ))
+        do
+                awk "{print \$$col}" $1 | tr '\n' '\t'| sed 's/\(.*\)\t/\1\n/' >> converted$$ # convert columns to rows
+        done
+        FILE=converted$$ # set this as the new file
+}
+
+function printData {
+        if [[ $1 = -r* ]] # check for how we need to print
+        then
+                echo -e "Average Median"
+                awk "{file=median$$}"'{printf "%s\t", $1; if(getline < "file") printf "%s\n", $1}'  average$$
+        elif [[ $1 = -c* ]]
+        then
+                echo -e "Averages:" && cat average$$ | tr "\n" "\t" | sed -n p
+                echo -e "\nMedians:" && cat median$$ | tr "\n" "\t" | sed -n p
+                echo -e "\n"
+        fi
+}
+# creates all tmpfiles
+function setup {
+        touch tmp$$ tmp1$$ converted$$ average$$ median$$
+}
+# uses to delete all tmpfiles on program finish or trap call
+function cleanup {
+                rm -f *$$
+}
+#####################################################################
+##                    Start of the Program                         ##
+#####################################################################
+
+setup
+trap cleanup SIGHUP SIGINT SIGTERM
+
+# Check the argument length
+if [ "$#" -gt "2" ]
+then
+        cleanup
+        echo "Too many arguments" >&2
+        exit 1
+fi
+
+if [ "$#" == "1" ] # if we only have 1 argument take stdin
+then
+        cat > $$file
+        FILE=$$file
+else
+        FILE=$2
+fi
+
+if [ "$#" == "0" ] # no arguments then exit
+then
+        cleanup
+        echo "Not enough arguments" >&2
+        exit 1
+fi
+
+# Check if file is empty
+if [ ! -s $FILE ]
+then
+        cleanup
+        echo "File{$2} is empty or doesnt exist" >&2
+        exit 1
+fi
+# check if file is readable
+if [ ! -r $FILE ]
+then
+        cleanup
+        echo "File {$2} is not readable" >&2
+        exit 1
+fi
+# Check for rows flag or default 1 argument
+if [[ $1 = -r* ]]
+then
+        calculate $FILE
+        printData $1
+        elif [[ $1 = -c* ]]
+then
+        columns2rows $FILE
+        calculate $FILE
+        printData $1
+fi
+
+cleanup
+exit 0
+
