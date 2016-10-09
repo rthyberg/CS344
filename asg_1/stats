@@ -113,13 +113,19 @@ if [[ $1 = -r* ]]
 then
         calculate $FILE
         printData $1
-        elif [[ $1 = -c* ]]
+        cleanup
+        exit 0
+elif [[ $1 = -c* ]]
 then
         columns2rows $FILE
         calculate $FILE
         printData $1
+        cleanup
+        exit 0
+else
+        cleanup
+        echo "Bad option or bad format" >&2
+        exit 1
 fi
 
-cleanup
-exit 0
 
