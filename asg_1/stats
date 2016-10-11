@@ -1,10 +1,11 @@
 #!/bin/bash
-trap trap_cleanup SIGTERM SIGHUP SIGINT
+trap trap_cleanup SIGTERM SIGHUP SIGINT # incase we get stuck in the trap. trapgod
 
 # variables and functions
 ROW_AVG=0
 COUNT=0
 
+#Calculate avg and median for each row and save to a file
 function calculate {
         # check each line
         while read line
@@ -29,13 +30,14 @@ function calculate {
                         MEDIAN=`expr $(($x + $y + 1)) / 2` # rounds to nearest
                 fi
                 ROW_AVG=`expr $(($ROW_AVG + $DENOM))  / $COUNT` # calc avg
-                echo -e "$ROW_AVG" >> average$$
+                echo -e "$ROW_AVG" >> average$$ # tmp files to passed to print function
                 echo -e "$MEDIAN" >> median$$
                 ROW_AVG=0
                 COUNT=0
         done < $1
 }
 
+# Makes a new file that has the columns as rows
 function columns2rows {
         length=$(awk '$0=NF' $1 |tail -n 1) #find the length of a rowe
         for((col= 1; col <= $length; col++ ))
@@ -44,7 +46,7 @@ function columns2rows {
         done
         FILE=converted$$ # set this as the new file
 }
-
+ # Prints proper format based on flags passed
 function printData {
         if [[ $1 = -r* ]] # check for how we need to print
         then
@@ -61,7 +63,7 @@ function printData {
 function setup {
         touch tmp$$ tmp1$$ converted$$ average$$ median$$
 }
-# uses to delete all tmpfiles on program finish or trap call
+# uses to delete all tmpfiles on program finish
 function cleanup {
                 rm -f tmp$$ tmp1$$ converted$$ average$$ median$$
 }
@@ -114,7 +116,7 @@ then
         echo "$2 is not readable" >&2
         exit 1
 fi
-# Check for rows flag or default 1 argument
+# Check for rows flag or col flagt
 if [[ $1 = -r* ]]
 then
         calculate $FILE
