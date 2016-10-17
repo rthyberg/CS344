@@ -18,10 +18,14 @@ int generateFiles();
 int createRooms();
 
 int main() {
-    srand();
+    generateFiles();
+    //srand();
     return 1;
 }
 
 int generateFiles() {
+    for(int i=0; i<10; i++) {
+        printf("%d", i);
+    }
     return 0;
 }
