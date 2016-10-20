@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -Wall -lpthread
+CFLAGS=-std=gnu89 -Wall -lpthread
 PROG=thybergr.adventure
 CODE=$(PROG).c
 OBJ=$(PROG).o
