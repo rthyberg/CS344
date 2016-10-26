@@ -20,6 +20,7 @@ struct Room {
      RoomType rtype;        // enum for what kind of room it is
 
 };
+// Function declarations
 char**  generateFiles(int[][7]);
 char** createConnections();
 Room* buildRoom(char*);
@@ -37,13 +38,13 @@ int main() {
     char** files = createConnections();
     int i;
     Room* room_list[7];
-    for(i = 0; i<7; i++) {
+    for(i = 0; i<7; i++) {   // build the rooms
         room_list[i] = buildRoom(files[i]);
     }
-    makeEdgesRoom(room_list, files);
-    gameLoop(room_list);
+    makeEdgesRoom(room_list, files); // build the game edges and roomss
+    gameLoop(room_list); // starts the game
     for(i = 0; i <7; i++) {
-        freeRoom(room_list[i]);
+        freeRoom(room_list[i]);  // free everything
         free(files[i]);
     }
     return 0;
@@ -64,27 +65,27 @@ void gameLoop(Room** cells) {
             end_room = 1;
         }
     }
-    if(end_room == 0) {
+    if(end_room == 0) {  // extra precautions to make sure we have an end room
         fprintf(stderr, "No end room was found");
         exit(1);
     }
-    while(current->rtype != END_ROOM) {
-        int valid_room = -1;
+    while(current->rtype != END_ROOM) {  // while we arnt at the end
+        int valid_room = -1; // hold boolean for if we chosee a valid room
         while(valid_room == -1) {
-            printGameRoom(current);
+            printGameRoom(current);  // calls helper function print room
             char buffer[100];
-            valid_room = getInputGame(buffer, current);
+            valid_room = getInputGame(buffer, current);  // calls helper function get input
             if(valid_room == -1) {
                 printf("\nHUH? I DON'T UNDERSTAND THAT ROOM, TRY AGAIN.\n\n");
             } else {
-                current = current->edge[valid_room];
-                strcpy(path[path_count], current->name);
-                path_count++;
+                current = current->edge[valid_room]; // set current room to the edge in the list index by valid_room
+                strcpy(path[path_count], current->name); // add to path
+                path_count++; // update our path count
                 printf("\n");
             }
         }
     }
-    printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+    printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n"); // victory
     printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", path_count);
     for(i = 0; i < path_count + 1; i++) {
         printf("%s\n", path[i]);
@@ -131,7 +132,7 @@ void makeEdgesRoom(Room** cells, char** filenames) {
         FILE* fp = myOpen(filenames[i], "r", "makeEdgesRoom"); // open file
         char* buffer = NULL;
         size_t len = 0;
-        int cflag = 0;
+        int cflag = 0;  // true if next line has the connection
         int count = 0;
         while(getdelim(&buffer, &len, ':', fp) != -1) { // find the connections line
            if(cflag == 1) {
@@ -290,16 +291,16 @@ char** createConnections() {
                         {1,1,1,0,1,0,0}, //6
                         {0,1,1,0,1,0,0}}; //7
 
-// random bonus connection
+// random bonus connections
    while(maxConnections>0) {
-       int rc = rand()%(7-0);
+       int rc = rand()%(7-0); // get 2 rng numbers
        int rc2 = rand()%(7-0);
        if(connections[rc] < 7
          && connections[rc2] < 7
          && matrix[rc][rc2] == 0
          && matrix[rc2][rc] == 0
-         && rc != rc2) {
-           matrix[rc][rc2] = 1;
+         && rc != rc2) { // if this is a valid connection
+           matrix[rc][rc2] = 1;  // make connection
            matrix[rc2][rc] = 1;
            connections[rc]++;
            connections[rc2]++;
@@ -360,7 +361,7 @@ int freeRoom(Room* cell) {
     int i=0;
     // Since we are gonna free all nodes we dont free the pointers in the array here
     while(cell->edge[i] != NULL) {
-        cell->edge[i]=NULL;
+        cell->edge[i]=NULL; // dont set free as we will be setting this free through the loop
         i++;
     }
     free(cell->edge);
