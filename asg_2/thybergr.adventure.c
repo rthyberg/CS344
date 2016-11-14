@@ -340,6 +340,7 @@ void print_graph(int graph [7][7]) {
         printf("# of Vertex: %d\n # of Edges: %d\n", count, (count/2));
 }
 
+<<<<<<< HEAD
 // print room struct
 void print_room(Room* cell) {
     printf("ROOM NAME: %s\n", cell->name);
@@ -369,6 +370,9 @@ int freeRoom(Room* cell) {
     cell->name = NULL;
     free(cell);
     cell=NULL;
+=======
+int generateFiles() {
+>>>>>>> 423bc29939c67bdf7af262db7b11d9eeabf4605c
     return 0;
 }
 
