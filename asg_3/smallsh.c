@@ -12,8 +12,8 @@ char** get_arguments();
 int free_get_arguments(char**);
 int cd(char**);
 int main() {
-    shell();
-    return 0;
+    int ret = shell();
+    return ret;
 }
 
 int shell() {
@@ -23,7 +23,11 @@ int shell() {
        fflush(stdout);
        char** command = get_arguments(); // parse into an array of strings
       if(strcmp(command[0],"exit") == 0) {
-           return 0;
+           if(command[1] != '\0') {
+               return atoi(command[1]);
+           } else {
+               return 0;
+           }
        }
        if(strcmp(command[0],"status") == 0) {
            printf("%d\n", status);
