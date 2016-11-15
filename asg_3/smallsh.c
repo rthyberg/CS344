@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -11,6 +12,7 @@ int shell();
 char** get_arguments();
 int free_get_arguments(char**);
 int cd(char**);
+int createChild(char**);
 int main() {
     int ret = shell();
     return ret;
@@ -28,13 +30,11 @@ int shell() {
            } else {
                return 0;
            }
-       }
-       if(strcmp(command[0],"status") == 0) {
+       } else if(strcmp(command[0],"status") == 0) {
            printf("%d\n", status);
            fflush(stdout);
            status = 0;
-       }
-       if(strcmp(command[0],"cd") == 0) {
+       } else if(strcmp(command[0],"cd") == 0) {
            int ret = cd(command);
            if(ret == -1) {
                printf("need a valid path for cd\n");
@@ -45,7 +45,15 @@ int shell() {
                char my_cwd[2048];
                getcwd(my_cwd,2048);
                printf("%s\n", my_cwd);  // tester to show cwd
+               fflush(stdout);
                status = 0;
+           }
+       } else if(command[0][0] == '#' || command[0][0] =='\0') {
+       } else {
+           int ret = createChild(command);
+           if(ret == 1) {
+               printf("command not found\n");
+               fflush(stdout);
            }
        }
        free_get_arguments(command);
@@ -53,6 +61,20 @@ int shell() {
     return 0;
 }
 
+int createChild(char** argv) {
+    pid_t spawnPid;
+    int exitstatus;
+    spawnPid = fork();
+    if(spawnPid == -1) {
+    }else if(spawnPid == 0) {
+        execvp(argv[0], argv);
+    }
+    waitpid(spawnPid, &exitstatus, 0);
+    if(exitstatus != 0) {
+        return 1;
+    }
+    return 0;
+}
 // function that will return an array of strings to be used as arguments
 char** get_arguments() {
     size_t size = 2048;
@@ -67,11 +89,13 @@ char** get_arguments() {
     fflush(stdin);
     buffer[strcspn(buffer, "\n")] = 0;  // rid new line char
     char* token = strtok(buffer, " ");
-    i = 0;
-    while(token != NULL) {  // parse all tokens into new char**
-        strcpy(arguments[i],token);
-        token = strtok(NULL," ");
-        i++;
+    for(i=0; i < 512; i++) {  // parse all tokens into new char**
+        if(token != NULL) {
+            strcpy(arguments[i],token);
+            token = strtok(NULL," ");
+        } else {
+            arguments[i] = NULL;
+        }
     }
     free(buffer);;
     return arguments;
