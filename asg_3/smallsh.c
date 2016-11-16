@@ -23,6 +23,7 @@ int main() {
 }
 
 int shell() {
+     signal(SIGINT, SIG_IGN);
      int status = 0;
      struct sigaction act;
      act.sa_handler = sigchld_handler;
@@ -41,7 +42,7 @@ int shell() {
                return 0;
            }
        } else if(strcmp(command[0],"status") == 0) { // get status of previous command
-           printf("%d\n", status);
+           printf("exit value %d\n", status);
            fflush(stdout);
            status = 0;
        } else if(strcmp(command[0],"cd") == 0) {   // calls cd command if cd is found
@@ -61,14 +62,20 @@ int shell() {
        } else if(command[0][0] == '#' || command[0][0] =='\0') {
        } else {
            int ret = createChild(command);
+           status = ret;
            if(ret == 1) {
                printf("command not found\n");
                fflush(stdout);
            } else if(ret == 2) {
-               printf("bad open for given file");
+               printf("terminated by signal 2\n");
+               fflush(stdout);
+           } else if(ret == 3) {
+               printf("bad open for given file\n");
+               fflush(stdout);
            }
        }
        free_get_arguments(command);
+       fflush(stdout);
     }
     return 0;
 }
@@ -78,12 +85,11 @@ int createChild(char** argv) {
     int exitstatus = 0;
     char* outputfile = NULL;
     char* inputfile = NULL;
+    char** args = createChar();
     int rdbool = 0;
     int redirect = 0;
     int fd = 0;
     int fd2 = 0;
-    char** args = createChar();
-    //int redirect = 0;
     int i;
     for(i = 0; i <512; i++) {
         if(strcmp(argv[i], ">") != 0 && strcmp(argv[i], "<") != 0 && strcmp(argv[i], "&") != 0) {
@@ -100,10 +106,8 @@ int createChild(char** argv) {
             }
             inputfile = argv[i+1];
             rdbool = 2;
-            printf("< test stub\n");
         } else if(strcmp(argv[i], "&") == 0){
             rdbool = 3;
-            printf("& test stub\n");
         }
         if(strcmp(args[i], "\0") == 0) {
             free(args[i]);
@@ -120,15 +124,9 @@ int createChild(char** argv) {
         case 0:
             if(rdbool == 1) {
                 fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if(fd != -1) {
-                    exit(2);
-                }
                 redirect = dup2(fd, 1);
             } else if(rdbool == 2) {
                 fd = open(inputfile, O_RDONLY);
-                if(fd != -1) {
-                    exit(2);
-                }
                 redirect = dup2(fd, 0);
             } else if(rdbool == 3) {
                 pid_t child_pid = getpid();
@@ -138,23 +136,19 @@ int createChild(char** argv) {
                 } else {
                     fd = open(inputfile, O_RDONLY);
                 }
-                if(fd != -1) {
-                    exit(2);
-                }
                 if(outputfile == NULL) {
                     fd2 = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 } else {
                     fd2 = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 }
-               if(fd2 != -1) {
-                    exit(2);
-                } redirect = dup2(fd, 0);
+                redirect = dup2(fd, 0);
                 redirect = dup2(fd2, 1);
                 execvp(args[0], args);
                 printf("this shouldnt show up\n");
 
             }
             if(redirect != -1) {
+                signal(SIGINT, SIG_DFL);
                 execvp(args[0], args);
                 perror("exec failed");
                 exit(1);
@@ -172,9 +166,12 @@ int createChild(char** argv) {
                 if(WIFEXITED(exitstatus)) {
                  //   printf("exit normally\n");
                     free_get_arguments(args);
+                    if(exitstatus==0) {
                     return 0;
+                    } else { return 1;}
                 }
-                return 1;
+                free_get_arguments(args);
+                return exitstatus;
     }
     free_get_arguments(args);
     return 0;
