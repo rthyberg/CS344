@@ -8,12 +8,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 
 int shell();
 char** get_arguments();
 int free_get_arguments(char**);
 int cd(char**);
 int createChild(char**);
+void sigchld_handler(int sig);
 char** createChar();
 int main() {
     int ret = shell();
@@ -22,7 +24,13 @@ int main() {
 
 int shell() {
      int status = 0;
+     struct sigaction act;
+     act.sa_handler = sigchld_handler;
+     act.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+     sigfillset(&(act.sa_mask));
+     sigaction(SIGCHLD, &act, NULL);
      while(1) {
+       fflush(stdout);
        printf(":");  // print prompt
        fflush(stdout);
        char** command = get_arguments(); // parse into an array of strings
@@ -56,6 +64,8 @@ int shell() {
            if(ret == 1) {
                printf("command not found\n");
                fflush(stdout);
+           } else if(ret == 2) {
+               printf("bad open for given file");
            }
        }
        free_get_arguments(command);
@@ -66,18 +76,19 @@ int shell() {
 int createChild(char** argv) {
     pid_t spawnPid;
     int exitstatus = 0;
-    char* outputfile;
-    char* inputfile;
+    char* outputfile = NULL;
+    char* inputfile = NULL;
     int rdbool = 0;
     int redirect = 0;
-    int fd = 0;;
+    int fd = 0;
+    int fd2 = 0;
     char** args = createChar();
     //int redirect = 0;
     int i;
     for(i = 0; i <512; i++) {
         if(strcmp(argv[i], ">") != 0 && strcmp(argv[i], "<") != 0 && strcmp(argv[i], "&") != 0) {
             strcpy(args[i], argv[i]);
-        } else if(strcmp(argv[i], ">") == 0){
+        } else if(strcmp(argv[i], ">") == 0){  // find if redirects or background process is needed
             if(i+1 > 512){
                 return 1;
             }
@@ -91,6 +102,7 @@ int createChild(char** argv) {
             rdbool = 2;
             printf("< test stub\n");
         } else if(strcmp(argv[i], "&") == 0){
+            rdbool = 3;
             printf("& test stub\n");
         }
         if(strcmp(args[i], "\0") == 0) {
@@ -108,11 +120,39 @@ int createChild(char** argv) {
         case 0:
             if(rdbool == 1) {
                 fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if(fd != -1) {
+                    exit(2);
+                }
                 redirect = dup2(fd, 1);
             } else if(rdbool == 2) {
                 fd = open(inputfile, O_RDONLY);
+                if(fd != -1) {
+                    exit(2);
+                }
                 redirect = dup2(fd, 0);
-                close(fd);
+            } else if(rdbool == 3) {
+                pid_t child_pid = getpid();
+                printf("background pid %d\n", child_pid);
+                if(inputfile == NULL) {
+                    fd = open("/dev/null", O_RDONLY);
+                } else {
+                    fd = open(inputfile, O_RDONLY);
+                }
+                if(fd != -1) {
+                    exit(2);
+                }
+                if(outputfile == NULL) {
+                    fd2 = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                } else {
+                    fd2 = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                }
+               if(fd2 != -1) {
+                    exit(2);
+                } redirect = dup2(fd, 0);
+                redirect = dup2(fd2, 1);
+                execvp(args[0], args);
+                printf("this shouldnt show up\n");
+
             }
             if(redirect != -1) {
                 execvp(args[0], args);
@@ -120,19 +160,24 @@ int createChild(char** argv) {
                 exit(1);
             }
         default:
-            cpid = waitpid(spawnPid, &exitstatus, 0);
-            if(cpid == -1) {
-                perror ("wait failed\n");
-                exit(1);
-            }
-            if(WIFEXITED(exitstatus)) {
-                printf("exit normally\n");
+            if(rdbool == 3) {
                 free_get_arguments(args);
                 return 0;
             }
+                cpid = waitpid(spawnPid, &exitstatus, 0);
+                if(cpid == -1) {
+                    perror ("wait failed\n");
+                    exit(1);
+                }
+                if(WIFEXITED(exitstatus)) {
+                 //   printf("exit normally\n");
+                    free_get_arguments(args);
+                    return 0;
+                }
+                return 1;
     }
     free_get_arguments(args);
-    return 1;
+    return 0;
 }
 // function that will return an array of strings to be used as arguments
 char** get_arguments() {
@@ -186,6 +231,15 @@ int cd(char** dir) {
     return ret;
 }
 
+void sigchld_handler(int sig) {
+    pid_t pid;
+    int status;
+    while((pid=waitpid(-1,&status, WNOHANG)) != -1) {
+        if(pid > 0) { // dont take info from the scheduler
+            printf("background process %d has finished: exit status %d\n",pid,status);
+        }
+    }
+}
 char** createChar() {
     size_t size = 2048;
     char** arguments = (char**)calloc(513, sizeof (char*)); // alloacate a new char**
