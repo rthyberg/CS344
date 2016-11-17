@@ -64,7 +64,7 @@ int shell() {
            int ret = createChild(command);
            status = ret;
            if(ret == 1) {
-               printf("command not found\n");
+        //       printf("command not found\n");
                fflush(stdout);
            } else if(ret == 2) {
                printf("terminated by signal 2\n");
@@ -114,7 +114,36 @@ int createChild(char** argv) {
             args[i] = NULL;
         }
     }
-    pid_t cpid;
+
+    if(rdbool == 1) { // open out putfile
+        fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if(fd == -1 ) {
+            return 3;
+        }
+     } else if(rdbool == 2) { // open inputfile
+         fd = open(inputfile, O_RDONLY);
+         if(fd == -1) {
+             return 3;
+         }
+     } else if(rdbool == 3) { // open files or dev null for background
+         if(inputfile == NULL) {
+             fd = open("/dev/null", O_RDONLY);
+         } else {
+             fd = open(inputfile, O_RDONLY);
+         }
+         if(outputfile == NULL) {
+             fd2 = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+         } else {
+             fd2 = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+         }
+         if(fd == -1) {
+             return 3;
+         }
+         if(fd2 == -1) {
+             return 3;
+         }
+     }
+  pid_t cpid;
     spawnPid = fork();
     switch (spawnPid) {
         case -1:
@@ -123,34 +152,26 @@ int createChild(char** argv) {
             break;
         case 0:
             if(rdbool == 1) {
-                fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 redirect = dup2(fd, 1);
+                close(fd);
             } else if(rdbool == 2) {
-                fd = open(inputfile, O_RDONLY);
                 redirect = dup2(fd, 0);
+                close(fd);
             } else if(rdbool == 3) {
                 pid_t child_pid = getpid();
                 printf("background pid %d\n", child_pid);
-                if(inputfile == NULL) {
-                    fd = open("/dev/null", O_RDONLY);
-                } else {
-                    fd = open(inputfile, O_RDONLY);
-                }
-                if(outputfile == NULL) {
-                    fd2 = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                } else {
-                    fd2 = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                }
                 redirect = dup2(fd, 0);
+                close(fd);
                 redirect = dup2(fd2, 1);
+                close(fd2);
                 execvp(args[0], args);
                 printf("this shouldnt show up\n");
-
             }
             if(redirect != -1) {
                 signal(SIGINT, SIG_DFL);
+    //            signal(SIGCHLD, SIG_IGN);
                 execvp(args[0], args);
-                perror("exec failed");
+                //perror("SMSH:exec failed");
                 exit(1);
             }
         default:
@@ -159,6 +180,9 @@ int createChild(char** argv) {
                 return 0;
             }
                 cpid = waitpid(spawnPid, &exitstatus, 0);
+                if(cpid == 768) {
+                    return 3;
+                }
                 if(cpid == -1) {
                     perror ("wait failed\n");
                     exit(1);
@@ -231,9 +255,13 @@ int cd(char** dir) {
 void sigchld_handler(int sig) {
     pid_t pid;
     int status;
-    while((pid=waitpid(-1,&status, WNOHANG)) != -1) {
+    while((pid=waitpid(-1,&status, WNOHANG)) >0) {
         if(pid > 0) { // dont take info from the scheduler
+            if(WIFEXITED(status)) {
             printf("background process %d has finished: exit status %d\n",pid,status);
+            } else if(WIFSIGNALED(status)) {
+                printf("background process %d has ended by signal: %d\n",pid,status);
+            }
         }
     }
 }
