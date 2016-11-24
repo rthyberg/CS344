@@ -3,14 +3,15 @@ import random
 import string
 
 def main():
-    myPid = os.getpid()
-    print(myPid);
+    myPid = os.getpid() # get ospid
+    # append so files are unique
     file_1 = "tic"+str(myPid)
     file_2 = "tac"+str(myPid)
     file_3 = "toe"+str(myPid)
     f1 = open(file_1, "w")
     f2 = open(file_2, "w")
     f3 = open(file_3, "w")
+    # make random words
     rng1 = randomword(10) + "\n"
     rng2 = randomword(10) + "\n"
     rng3 = randomword(10) + "\n"
