@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
             if (charsRead < 0) error("ERROR reading from socket");
 
             if(strcmp(buffer, "otp_enc") != 0) {
+                send(establishedConnectionFD, "otp_enc_d", 10, 0); // report the server name back
                 close(establishedConnectionFD);
             } else {
                 send(establishedConnectionFD, "otp_enc_d", 10, 0); // Send success back
@@ -109,7 +110,7 @@ void encrypt(char* word, char* key, char* crypt, int length) {
         }
         total = w + k;
         if(total > 26) {
-            total = total-26;
+            total = total%26;
         }
         if(total == 26) {
             crypt[i]=32;

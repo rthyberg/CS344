@@ -8,7 +8,7 @@
 
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 void decrypt(char*, char*, char*, int);
-/*
+
 int main(int argc, char *argv[])
 {
     int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
@@ -51,10 +51,11 @@ int main(int argc, char *argv[])
             charsRead = recv(establishedConnectionFD, buffer, 77000, 0); // Read the client's message from the socket
             if (charsRead < 0) error("ERROR reading from socket");
 
-            if(strcmp(buffer, "otp_enc") != 0) {
+            if(strcmp(buffer, "otp_dec") != 0) {
+                send(establishedConnectionFD, "otp_dec_d", 10, 0); // Send the name of server back
                 close(establishedConnectionFD);
             } else {
-                send(establishedConnectionFD, "otp_enc_d", 10, 0); // Send success back
+                send(establishedConnectionFD, "otp_dec_d", 10, 0); // Send success back
                 memset(buffer, '\0', 77000);
                 charsRead = recv(establishedConnectionFD, buffer, 77000, 0); // Read the client's message from the socket
                 if (charsRead < 0) error("ERROR reading from socket");
@@ -67,9 +68,10 @@ int main(int argc, char *argv[])
                 send(establishedConnectionFD, "success", 8, 0); // Send success back
                 if (charsRead < 0) error("ERROR writing to socket");
 
-                char* crypt = (char*)calloc(6, sizeof(char));
-                encrypt(buffer, key, crypt, strlen(buffer));
-                send(establishedConnectionFD, crypt, max,0);
+                char* crypt = (char*)calloc(strlen(buffer)+1, sizeof(char));
+                decrypt(buffer, key, crypt, strlen(buffer));
+//                printf("crypt:%s\n", crypt);
+                send(establishedConnectionFD, crypt, strlen(crypt),0);
                 free(crypt);
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client
             }
@@ -78,18 +80,18 @@ int main(int argc, char *argv[])
     close(listenSocketFD); // Close the listening socket
     return 0;
 }
-*/
 
-int main(int argc, char** arcv) {
-    char* word = "EQNVZ";
-    char* key= "XMCKL";
-    char* crypt = (char*)calloc(6, sizeof(char));
-    decrypt(word, key, crypt, 5);
-    printf("word:%s key:%s crypt:%s\n", word, key, crypt);
-    return 0;
+/*
+   int main(int argc, char** arcv) {
+   char* word = "EQNVZ";
+   char* key= "XMCKL";
+   char* crypt = (char*)calloc(6, sizeof(char));
+   decrypt(word, key, crypt, 5);
+   printf("word:%s key:%s crypt:%s\n", word, key, crypt);
+   return 0;
    }
-
-void encrypt(char* word, char* key, char* crypt, int length) {
+*/
+void decrypt(char* word, char* key, char* crypt, int length) {
     int i;
     int w = 0;
     int k = 0;
@@ -105,14 +107,14 @@ void encrypt(char* word, char* key, char* crypt, int length) {
         } else if(key[i] == 32) {
             k = 26;
         }
-        total = w + k;
-        if(total > 26) {
-            total = total-26;
+        total = (w - k) + 1;
+        if(total < 1) {
+            total = total + 26;
         }
         if(total == 26) {
-            crypt[i]=32;
+            crypt[1]=32;
         } else {
-            crypt[i] = total + 65;
+            crypt[i] = total+64;;
         }
     }
 }

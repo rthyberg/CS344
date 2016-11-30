@@ -84,19 +84,19 @@ int main(int argc, char *argv[])
         exit(2);
     }
     // handshake
-    charsWritten = send(socketFD, "otp_enc", 8, 0); // Write to the server
+    charsWritten = send(socketFD, "otp_dec", 8, 0); // Write to the server
 
     if (charsWritten < 0) error("CLIENT: ERROR writing to socket");
     if (charsWritten < strlen(check)) fprintf(stderr, "CLIENT: WARNING: Not all data written to socket!\n");
 
     memset(check, '\0', 255);
     recv(socketFD, check, 255-1, 0);
-    if(strcmp(check, "otp_enc_d") != 0) {
-        fprintf(stderr, "This program can only access otp_enc_d.. got:%s\n",check);
+    if(strcmp(check, "otp_dec_d") != 0) {
+        fprintf(stderr, "This program can only access otp_dec_d... got:%s\n",check);
         free(buffer);
         free(key);
         free(data);
-        exit(2);
+        exit(1);
     }
 
 
