@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         return 1;
     }
     //    printf("received:%s\n",check);
-    recv(socketFD, data, strlen(data), 0);
+    recv(socketFD, data, 77000, 0);
     printf("%s\n", data);
 
     close(socketFD); // Close the socket
@@ -138,6 +138,6 @@ int fileToString(char* word, FILE* fp) {
         i++;
         next = fgetc(fp); // increment while loop
     }
-    word[i-1] = '\0';
+    word[i-1]='\0';
     return 0;
 }

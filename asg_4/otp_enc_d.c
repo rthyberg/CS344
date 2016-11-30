@@ -67,9 +67,10 @@ int main(int argc, char *argv[])
                 send(establishedConnectionFD, "success", 8, 0); // Send success back
                 if (charsRead < 0) error("ERROR writing to socket");
 
-                char* crypt = (char*)calloc(6, sizeof(char));
-                encrypt(buffer, key, crypt, 5);
-                send(establishedConnectionFD, crypt, max,0);
+                char* crypt = (char*)calloc(strlen(buffer)+1, sizeof(char));
+                encrypt(buffer, key, crypt, strlen(buffer));
+//                printf("crypt:%s\n", crypt);
+                send(establishedConnectionFD, crypt, strlen(crypt),0);
                 free(crypt);
                 close(establishedConnectionFD); // Close the existing socket which is connected to the client
             }
@@ -95,6 +96,7 @@ void encrypt(char* word, char* key, char* crypt, int length) {
     int k = 0;
     int total = 0;
     for(i = 0; i < length; i++) {
+        total = 0;
         if(word[i] > 64 && word[i] < 91) {
             w = word[i] - 65;
         } else if(word[i] == 32) {
