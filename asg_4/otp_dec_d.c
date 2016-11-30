@@ -107,14 +107,17 @@ void decrypt(char* word, char* key, char* crypt, int length) {
         } else if(key[i] == 32) {
             k = 26;
         }
-        total = (w - k) + 1;
+        total = (w - k);
         if(total < 1) {
-            total = total + 26;
+            total = (total + 26); // make positive
         }
-        if(total == 26) {
-            crypt[1]=32;
-        } else {
-            crypt[i] = total+64;;
-        }
+        if(total != 0) {
+            total = total%26;
+            if(total == 0) {
+                crypt[i] = 32;
+            } else {
+                crypt[i] = total + 65;
+            }
+        } else crypt[i] = 65;
     }
 }

@@ -109,13 +109,13 @@ void encrypt(char* word, char* key, char* crypt, int length) {
             k = 26;
         }
         total = w + k;
-        if(total > 26) {
+        if(total != 0) {
             total = total%26;
-        }
-        if(total == 26) {
-            crypt[i]=32;
-        } else {
-            crypt[i] = total + 65;
-        }
+            if(total == 0) {
+                crypt[i]=32;
+            } else {
+                crypt[i] = total + 65;
+            }
+        } else crypt[i] = 65;
     }
 }
