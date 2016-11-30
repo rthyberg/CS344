@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     int fsize2 = ftell(file2);
     buffer = malloc(fsize);
     key = malloc(fsize2);
-    data = malloc(fsize-1);
+    data = malloc(fsize);
     int valid= fileToString(buffer, file);
     if(valid == 1 ) {
         printf("invalid charcters in file\n");

@@ -1,12 +1,14 @@
 CC=gcc
 CFLAGS=-std=gnu89 -Wall -lpthread
-PROG=smallsh
-CODE=$(PROG).c
-OBJ=$(PROG).o
+ENC=otp_enc
+ENCD=otp_enc_d
 
-all:$(PROG)
+all:$(ENC) $(ENCD)
 
-$(PROG):
-	$(CC) -o $(PROG) $(CODE) $(CFLAGS)
+$(ENC):
+	$(CC) -o $(ENC) $(ENC).c $(CFLAGS)
+$(ENCD):
+	$(CC) -o $(ENCD) $(ENCD).c $(CFLAGS)
 clean:
-	rm  $(PROG)
+	rm $(ENC)
+	rm $(ENCD)
