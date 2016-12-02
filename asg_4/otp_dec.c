@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     data = malloc(fsize);
     int valid= fileToString(buffer, file);
     if(valid == 1 ) {
-        printf("invalid charcters in file\n");
+        fprintf(stderr, "invalid charcters in file\n");
         free(buffer);
         free(key);
         free(data);
