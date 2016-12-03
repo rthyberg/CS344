@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 }
 
 // Remove newlines and push file into the buffer
+// also checks that char are capital or space
 int fileToString(char* word, FILE* fp) {
     rewind(fp);
     char next = fgetc(fp);
