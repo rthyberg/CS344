@@ -22,3 +22,4 @@ clean:
 	rm $(ENCD)
 	rm $(DEC)
 	rm $(DECD)
+	rm $(KEY)
